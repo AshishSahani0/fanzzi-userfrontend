@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1040778134376",
+    "project_id": "fanzzi-a47d5",
+    "storage_bucket": "fanzzi-a47d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040778134376:android:af353a08fc5c8452ee8cdd",
+        "android_client_info": {
+          "package_name": "com.example.frontenduser"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVMxTyozwhT817vymyD3mVOTX-BlUjDRs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1040778134376:android:177f5e65a0dc5d30ee8cdd",
+        "android_client_info": {
+          "package_name": "com.example.userfrontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVMxTyozwhT817vymyD3mVOTX-BlUjDRs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
