@@ -6,7 +6,7 @@ import '../../createpage/channel_api.dart';
 import '../../api/channel_report_admin_api.dart';
 import '../../subcriber/channel_subscriber_api.dart';
 import '../widgets/owner/info/channel_info_header.dart';
-import '../widgets/owner/info/link/channel_invite_tile.dart';
+import '../../deep_link/channel_invite_tile.dart';
 import '../widgets/owner/info/channel_info_menu.dart';
 
 class ChannelInfoPage extends StatefulWidget {

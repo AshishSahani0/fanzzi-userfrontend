@@ -12,11 +12,8 @@ import 'package:frontenduser/channel/deep_link/channel_link_handler.dart';
 import 'package:frontenduser/channel/join/channel_join_page.dart';
 import 'package:frontenduser/dashboard/user_dashboard.dart';
 
-
-
 /// ⭐ Global Navigator Key
-final GlobalKey<NavigatorState> navigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// ⭐ Global Camera List (VERY IMPORTANT)
 late List<CameraDescription> globalCameras;
@@ -29,16 +26,14 @@ Future<void> main() async {
 
   /// 🔥 Firebase Emulator (Dev Only)
   if (!kReleaseMode) {
-    await FirebaseAuth.instance
-        .useAuthEmulator("10.0.2.2", 9099);
+    await FirebaseAuth.instance.useAuthEmulator("10.0.2.2", 9099);
   }
 
   /// 🔥 Initialize API Client
   await ApiClient.init();
 
   ApiClient.onLogout = () {
-    navigatorKey.currentState!
-        .pushNamedAndRemoveUntil("/start", (_) => false);
+    navigatorKey.currentState!.pushNamedAndRemoveUntil("/start", (_) => false);
   };
 
   /// 🔥 VERY IMPORTANT — Initialize Cameras BEFORE runApp
@@ -56,8 +51,7 @@ class LinkoraApp extends StatefulWidget {
   const LinkoraApp({super.key});
 
   @override
-  State<LinkoraApp> createState() =>
-      _LinkoraAppState();
+  State<LinkoraApp> createState() => _LinkoraAppState();
 }
 
 class _LinkoraAppState extends State<LinkoraApp> {
@@ -66,8 +60,7 @@ class _LinkoraAppState extends State<LinkoraApp> {
     super.initState();
 
     /// 📎 Start Deep Link Listener ONCE
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       ChannelLinkHandler.init(context);
     });
   }
@@ -102,8 +95,8 @@ class _LinkoraAppState extends State<LinkoraApp> {
                   as Map<String, dynamic>;
 
           return ChannelJoinPage(
-            code: args["code"],
-            isPublic: args["isPublic"],
+            code: args?["code"] ?? "",
+            isPublic: args?["isPublic"] ?? true,
           );
         },
       },

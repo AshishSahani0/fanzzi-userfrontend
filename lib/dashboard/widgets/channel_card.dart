@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontenduser/channel/model/channel_model.dart';
-import 'package:frontenduser/channel/owner/widgets/owner/info/channel_status_viewer_page.dart';
+import 'package:frontenduser/channel/status/channel_status_viewer_page.dart';
 
 class ChannelCard extends StatelessWidget {
   final ChannelModel channel;

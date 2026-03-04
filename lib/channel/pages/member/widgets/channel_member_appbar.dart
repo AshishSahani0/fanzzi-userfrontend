@@ -1,74 +1,81 @@
 import 'package:flutter/material.dart';
-import 'package:frontenduser/channel/member_count/channel_member_section.dart';
 import 'package:frontenduser/channel/model/channel_model.dart';
 import 'package:frontenduser/channel/pages/member/widgets/info/channel_info_page.dart';
 import 'channel_member_menu.dart';
 
-class ChannelMemberAppBar extends StatefulWidget
+class ChannelMemberAppBar extends StatelessWidget
     implements PreferredSizeWidget {
+
   final ChannelModel channel;
 
-  const ChannelMemberAppBar({super.key, required this.channel});
-
-  @override
-  State<ChannelMemberAppBar> createState() =>
-      _ChannelMemberAppBarState();
+  const ChannelMemberAppBar({
+    super.key,
+    required this.channel,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+ bool get _showSubscribeButton {
+  return channel.type == "PAID" &&
+      !channel.owner &&
+      !channel.subscribed;
 }
 
-class _ChannelMemberAppBarState
-    extends State<ChannelMemberAppBar> {
-
-  bool get _showSubscribeButton {
-    return widget.channel.member == true &&
-        widget.channel.type == "PAID" &&
-        widget.channel.subscribed == false &&
-        widget.channel.owner == false;
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return "${(count / 1000000).toStringAsFixed(1)}M";
+    }
+    if (count >= 1000) {
+      return "${(count / 1000).toStringAsFixed(1)}K";
+    }
+    return "$count";
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final formattedCount = _formatCount(channel.memberCount);
+
     return AppBar(
       backgroundColor: Colors.blue.shade700,
       titleSpacing: 0,
 
-      /// ⭐ Telegram-style clickable header
       title: InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  ChannelInfoPage(channel: widget.channel),
+              builder: (_) => ChannelInfoPage(channel: channel),
             ),
           );
         },
         child: Row(
           children: [
+
             const SizedBox(width: 8),
 
             /// ⭐ Avatar
             CircleAvatar(
               radius: 18,
-              backgroundImage: widget.channel.profileImageUrl != null
-                  ? NetworkImage(widget.channel.profileImageUrl!)
+              backgroundImage: channel.profileImageUrl != null
+                  ? NetworkImage(channel.profileImageUrl!)
                   : null,
-              child: widget.channel.profileImageUrl == null
-                  ? Text(widget.channel.name[0].toUpperCase())
+              child: channel.profileImageUrl == null
+                  ? Text(channel.name[0].toUpperCase())
                   : null,
             ),
 
             const SizedBox(width: 10),
 
-            /// ⭐ Name + Member Count (Reusable)
+            /// ⭐ Name + Member Count
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   Text(
-                    widget.channel.name,
+                    channel.name,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 15,
@@ -76,10 +83,16 @@ class _ChannelMemberAppBarState
                     ),
                   ),
 
-                  /// ⭐ MEMBER COUNT WIDGET
-                  ChannelMemberSection(
-                    channelId: widget.channel.id,
-                    compact: true,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      "$formattedCount member${channel.memberCount == 1 ? '' : 's'}",
+                      key: ValueKey(channel.memberCount),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -90,7 +103,7 @@ class _ChannelMemberAppBarState
 
       actions: [
 
-        /// 🔥 SUBSCRIBE BUTTON (Paid channels only)
+        /// 🔥 Subscribe Button
         if (_showSubscribeButton)
           Padding(
             padding: const EdgeInsets.only(right: 6),
@@ -99,7 +112,9 @@ class _ChannelMemberAppBarState
                 backgroundColor: Colors.orange.shade600,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -115,18 +130,16 @@ class _ChannelMemberAppBarState
             ),
           ),
 
-        ChannelMemberMenu(channel: widget.channel),
+        ChannelMemberMenu(channel: channel),
       ],
     );
   }
 
-  /// ⭐ Subscription Bottom Sheet
   void _openSubscribeSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
         return Padding(
@@ -135,25 +148,29 @@ class _ChannelMemberAppBarState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               Text(
-                "Subscribe to ${widget.channel.name}",
+                "Subscribe to ${channel.name}",
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 8),
+
               Text(
                 "Unlock full content access",
                 style: TextStyle(color: Colors.grey.shade600),
               ),
+
               const SizedBox(height: 16),
+
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "₹${widget.channel.monthlyPrice} / month",
+                    "₹${channel.monthlyPrice} / month",
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -162,10 +179,9 @@ class _ChannelMemberAppBarState
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // TODO: Call subscribe API
                     },
                     child: const Text("Confirm"),
-                  )
+                  ),
                 ],
               ),
             ],

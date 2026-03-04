@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:frontenduser/channel/owner/widgets/owner/info/channel_status_viewer_page.dart';
-import 'package:frontenduser/channel/owner/widgets/owner/info/status_avatar.dart';
+import 'package:frontenduser/channel/status/channel_status_viewer_page.dart';
+import 'package:frontenduser/channel/status/status_avatar.dart';
 import '../../../../model/channel_model.dart';
 
 import 'channel_info_actions.dart';
@@ -10,29 +10,36 @@ class ChannelInfoHeader extends StatelessWidget {
 
   const ChannelInfoHeader({super.key, required this.channel});
 
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return "${(count / 1000000).toStringAsFixed(1)}M";
+    }
+    if (count >= 1000) {
+      return "${(count / 1000).toStringAsFixed(1)}K";
+    }
+    return "$count";
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = channel.name.isNotEmpty ? channel.name : "Channel";
 
     final visibility = (channel.visibility ?? "PUBLIC").toUpperCase();
+    final type = (channel.type ?? "FREE").toUpperCase();
+    final isPaid = type == "PAID";
 
     return SliverAppBar(
-      expandedHeight: 300, // ✅ FIX OVERFLOW
+      expandedHeight: 320, // ✅ FIX OVERFLOW
       pinned: true,
       backgroundColor: Colors.blue.shade700,
 
-      /* actions: const [
-        Icon(Icons.edit),
-        SizedBox(width: 12),
-        Icon(Icons.more_vert),
-        SizedBox(width: 8),
-      ], */
+  
       flexibleSpace: FlexibleSpaceBar(
         background: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
 
               StatusAvatar(
                 radius: 52,
@@ -52,7 +59,7 @@ class ChannelInfoHeader extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 5),
 
               Text(
                 name,
@@ -63,15 +70,32 @@ class ChannelInfoHeader extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
+
+              Text(
+              isPaid
+                  ? "Paid Channel • ₹${channel.monthlyPrice ?? 0}/month"
+                  : "Free Channel",
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 2),
 
               Text(
                 visibility == "PUBLIC" ? "Public Channel" : "Private Channel",
                 style: const TextStyle(fontSize: 14, color: Colors.white70),
               ),
 
-              const SizedBox(height: 20),
-
+              Text(
+                "${_formatCount(channel.memberCount)} "
+                "member${channel.memberCount == 1 ? '' : 's'}",
+                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+              const SizedBox(height: 7),
               // ✅ Action Buttons Component
               ChannelInfoActions(channelId: channel.id),
             ],

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:frontenduser/channel/block/channel_block_api.dart';
 import 'package:frontenduser/channel/join/channel_join_api.dart';
-import 'package:frontenduser/channel/member_count/channel_membership_api.dart';
+import 'package:frontenduser/channel/membership/channel_membership_api.dart';
 
 class ChannelJoinButton extends StatefulWidget {
   final String channelId;
-  final String code;        // slug or token
-  final bool isPublic;      // ✅ NEW
+  final String code;
+  final bool isPublic;
   final VoidCallback? onJoined;
 
   const ChannelJoinButton({
@@ -22,10 +22,11 @@ class ChannelJoinButton extends StatefulWidget {
       _ChannelJoinButtonState();
 }
 
-class _ChannelJoinButtonState extends State<ChannelJoinButton> {
-  bool loading = true;
-  bool blocked = false;
-  bool joined = false;
+class _ChannelJoinButtonState
+    extends State<ChannelJoinButton> {
+
+  final ValueNotifier<_JoinState> _state =
+      ValueNotifier(_JoinState.loading);
 
   @override
   void initState() {
@@ -34,27 +35,29 @@ class _ChannelJoinButtonState extends State<ChannelJoinButton> {
   }
 
   Future<void> _init() async {
-  try {
-    final results = await Future.wait([
-      ChannelBlockApi.isBlocked(widget.channelId),
-      ChannelMembershipApi.isMember(widget.channelId),
-    ]);
+    try {
+      final blocked =
+          await ChannelBlockApi.isBlocked(widget.channelId);
 
-    blocked = results[0] as bool;
-    joined = results[1] as bool;
-  } catch (_) {}
+      if (blocked) {
+        _state.value = _JoinState.blocked;
+        return;
+      }
 
-  if (!mounted) return;
+      final member =
+          await ChannelMembershipApi.isMember(widget.channelId);
 
-  setState(() => loading = false);
-}
-
-  // =========================================================
-  // ➕ JOIN CHANNEL
-  // =========================================================
+      _state.value =
+          member ? _JoinState.joined : _JoinState.ready;
+    } catch (_) {
+      _state.value = _JoinState.ready;
+    }
+  }
 
   Future<void> _join() async {
-    setState(() => loading = true);
+    if (_state.value != _JoinState.ready) return;
+
+    _state.value = _JoinState.loading;
 
     try {
       if (widget.isPublic) {
@@ -63,103 +66,105 @@ class _ChannelJoinButtonState extends State<ChannelJoinButton> {
         await ChannelJoinApi.joinByToken(widget.code);
       }
 
-      if (!mounted) return;
-
-      setState(() {
-        joined = true;
-        loading = false;
-      });
-
+      _state.value = _JoinState.joined;
       widget.onJoined?.call();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Joined Channel ✅")),
-      );
     } catch (_) {
-      if (!mounted) return;
-      setState(() => loading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Unable to join channel")),
-      );
+      _state.value = _JoinState.ready;
     }
   }
 
-  // =========================================================
-  // 🔓 UNBLOCK CHANNEL
-  // =========================================================
-
   Future<void> _unblock() async {
-    setState(() => loading = true);
+    _state.value = _JoinState.loading;
 
     try {
       await ChannelBlockApi.unblockChannel(widget.channelId);
-
-      if (!mounted) return;
-
-      setState(() {
-        blocked = false;
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Channel unblocked ✅")),
-      );
+      _state.value = _JoinState.ready;
     } catch (_) {
-      if (!mounted) return;
-      setState(() => loading = false);
+      _state.value = _JoinState.blocked;
     }
   }
 
-  String get _text {
-    if (loading) return "Please wait...";
-    if (blocked) return "Unblock Channel";
-    if (joined) return "Joined";
-    return "Join Channel";
-  }
-
-  VoidCallback? get _action {
-    if (loading || joined) return null;
-    if (blocked) return _unblock;
-    return _join;
-  }
-
-  Color get _color {
-    if (blocked) return Colors.orange;
-    if (joined) return Colors.green;
-    return Colors.blue;
+  @override
+  void dispose() {
+    _state.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        width: double.infinity,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _color,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
+    return ValueListenableBuilder<_JoinState>(
+      valueListenable: _state,
+      builder: (_, state, __) {
+        final isLoading = state == _JoinState.loading;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading
+                    ? null
+                    : state == _JoinState.blocked
+                        ? _unblock
+                        : state == _JoinState.ready
+                            ? _join
+                            : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _color(state),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(_text(state)),
+              ),
             ),
           ),
-          onPressed: _action,
-          child: loading
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  _text,
-                  style: const TextStyle(fontSize: 16),
-                ),
-        ),
-      ),
+        );
+      },
     );
   }
+
+  String _text(_JoinState state) {
+    switch (state) {
+      case _JoinState.loading:
+        return "Please wait...";
+      case _JoinState.blocked:
+        return "Unblock Channel";
+      case _JoinState.joined:
+        return "Joined";
+      case _JoinState.ready:
+      default:
+        return "Join Channel";
+    }
+  }
+
+  Color _color(_JoinState state) {
+    switch (state) {
+      case _JoinState.blocked:
+        return Colors.orange;
+      case _JoinState.joined:
+        return Colors.green;
+      default:
+        return Colors.blue;
+    }
+  }
+}
+
+enum _JoinState {
+  loading,
+  blocked,
+  joined,
+  ready,
 }

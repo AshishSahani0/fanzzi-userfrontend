@@ -2,36 +2,30 @@ import '../../auth/config/api_client.dart';
 import '../model/channel_model.dart';
 
 class ChannelSearchApi {
-  static Future<Map<String, List<ChannelModel>>> searchChannels(
-      String query) async {
+
+  static Future<List<ChannelModel>> searchPublic(
+      String query,
+      {int page = 0, int size = 20}) async {
+
+    if (query.trim().isEmpty) return [];
 
     final res = await ApiClient.dio.get(
-      "/api/channels/search",
-      queryParameters: {"q": query},
+      "/api/channels/search/public",
+      queryParameters: {
+        "q": query.trim(),
+        "page": page,
+        "size": size,
+      },
     );
 
-    final data = res.data as Map<String, dynamic>;
+    final data = res.data;
 
-    final joinedData = data["joined"];
-    final publicData = data["public"];
+    if (data == null || data["content"] is! List) {
+      return [];
+    }
 
-    final joinedList = (joinedData != null &&
-            joinedData["content"] is List)
-        ? (joinedData["content"] as List)
-            .map((e) => ChannelModel.fromJson(e))
-            .toList()
-        : <ChannelModel>[];
-
-    final publicList = (publicData != null &&
-            publicData["content"] is List)
-        ? (publicData["content"] as List)
-            .map((e) => ChannelModel.fromJson(e))
-            .toList()
-        : <ChannelModel>[];
-
-    return {
-      "joined": joinedList,
-      "public": publicList,
-    };
+    return (data["content"] as List)
+        .map((e) => ChannelModel.fromJson(e))
+        .toList();
   }
 }

@@ -548,9 +548,9 @@ class ChannelFeedPageState extends State<ChannelFeedPage> {
                         final bool canSelect = isOwner;
 
                         return GestureDetector(
-                          // ============================================================
-                          // 🔒 LONG PRESS (SELECTION) — OWNER ONLY
-                          // ============================================================
+                          behavior: HitTestBehavior.translucent,
+
+                          // LONG PRESS
                           onLongPress: () {
                             if (!canSelect) return;
 
@@ -558,13 +558,10 @@ class ChannelFeedPageState extends State<ChannelFeedPage> {
                             widget.onToggleSelection(post.id);
                           },
 
-                          // ============================================================
-                          // 🔒 TAP BEHAVIOR
-                          // ============================================================
+                          // TAP
                           onTap: () {
                             if (!canInteract) return;
 
-                            // Only handle selection at feed level
                             if (widget.selectionMode && canSelect) {
                               widget.onToggleSelection(post.id);
                             }
@@ -576,8 +573,6 @@ class ChannelFeedPageState extends State<ChannelFeedPage> {
                                 key: _postKeys[post.id],
                                 child: PostCard(
                                   post: post,
-
-                                  // 🔐 Unlock allowed only if user joined OR owner
                                   onUnlock: canInteract
                                       ? () => unlockPost(post)
                                       : null,

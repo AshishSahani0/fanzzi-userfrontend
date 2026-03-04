@@ -4,7 +4,7 @@ import 'package:frontenduser/channel/pages/member/widgets/info/channel_info_acti
 import 'package:frontenduser/channel/pages/member/widgets/info/channel_info_description.dart';
 import 'package:frontenduser/channel/pages/member/widgets/info/channel_info_header.dart';
 import 'package:frontenduser/channel/pages/member/widgets/info/channel_info_tabs.dart';
-import 'package:frontenduser/channel/owner/widgets/owner/info/link/channel_invite_tile.dart';
+import 'package:frontenduser/channel/deep_link/channel_invite_tile.dart';
 
 
 class ChannelInfoPage extends StatelessWidget {

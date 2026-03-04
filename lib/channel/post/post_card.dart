@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:frontenduser/channel/media_preview/media_preview_page.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'post_model.dart';
 
 class PostCard extends StatelessWidget {
@@ -141,18 +143,35 @@ class PostCard extends StatelessWidget {
               ),
 
             // ================= TEXT =================
-            if (post.text.trim().isNotEmpty)
-              Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                child: Text(
-                  post.text,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    height: 1.4,
-                  ),
-                ),
-              ),
+            // ================= TEXT =================
+if (post.text.trim().isNotEmpty)
+  Padding(
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+    child: Linkify(
+      text: post.text,
+      style: const TextStyle(
+        fontSize: 15.5,
+        height: 1.4,
+        color: Colors.black,
+      ),
+      linkStyle: const TextStyle(
+        color: Colors.blue,
+        decoration: TextDecoration.underline,
+      ),
+      onOpen: (link) async {
+  String url = link.url;
+
+  // If scheme missing, add https
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = "https://$url";
+  }
+
+  final uri = Uri.parse(url);
+
+  await launchUrl(uri);
+},
+    ),
+  ),
 
             // ================= FOOTER =================
             Padding(

@@ -38,14 +38,14 @@ class _ChannelEditInfoPageState extends State<ChannelEditInfoPage> {
     description =
         TextEditingController(text: widget.channel.description ?? "");
 
+    // 🔥 Live header update
+    name.addListener(() => setState(() {}));
+
     type = widget.channel.type ?? "FREE";
     visibility = widget.channel.visibility ?? "PUBLIC";
 
-    // ✅ IMPORTANT FIX — Prefill price from DB
     priceController = TextEditingController(
-      text: widget.channel.monthlyPrice != null
-          ? widget.channel.monthlyPrice.toString()
-          : "",
+      text: widget.channel.monthlyPrice?.toString() ?? "",
     );
 
     avatarKey = widget.channel.profileImageKey;
@@ -78,7 +78,7 @@ class _ChannelEditInfoPageState extends State<ChannelEditInfoPage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+          .showSnackBar(SnackBar(content: Text("Upload failed")));
     } finally {
       if (mounted) setState(() => uploadingAvatar = false);
     }
@@ -90,6 +90,25 @@ class _ChannelEditInfoPageState extends State<ChannelEditInfoPage> {
   Future<void> _save() async {
     if (saving) return;
 
+    // 🔥 Frontend Validation
+    if (name.text.trim().length < 3 ||
+        name.text.trim().length > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Name must be 3–100 characters")),
+      );
+      return;
+    }
+
+    if (type == "PAID") {
+      final price = int.tryParse(priceController.text);
+      if (price == null || price <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Enter valid monthly price")),
+        );
+        return;
+      }
+    }
+
     setState(() => saving = true);
 
     try {
@@ -99,23 +118,27 @@ class _ChannelEditInfoPageState extends State<ChannelEditInfoPage> {
         visibility: visibility,
         type: type,
         profileImageKey: avatarKey,
-        monthlyPrice: type == "PAID"
-            ? int.tryParse(priceController.text)
-            : null,
+        monthlyPrice:
+            type == "PAID" ? int.parse(priceController.text) : null,
       );
 
       await ChannelUpdateApi.updateChannel(widget.channel.id, req);
 
       if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Channel updated successfully")),
+      );
+
       Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Update failed: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Update failed")),
+      );
     } finally {
       if (mounted) setState(() => saving = false);
     }
   }
-
   // =====================================================
   // UI
   // =====================================================

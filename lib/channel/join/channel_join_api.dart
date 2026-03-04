@@ -1,17 +1,27 @@
 import '../../auth/config/api_client.dart';
+import '../model/channel_model.dart';
 
 class ChannelJoinApi {
 
-  static Future<void> joinByChannelId(String channelId) async {
-    await ApiClient.dio.post("/api/channels/join/$channelId");
+  static Future<ChannelModel> joinByChannelId(String channelId) async {
+    final response =
+        await ApiClient.dio.post("/api/channels/join/$channelId");
+
+    return ChannelModel.fromJson(response.data);
   }
 
-  // Keep these ONLY for deep link usage
-  static Future<void> joinBySlug(String slug) async {
-    await ApiClient.dio.post("/api/channels/join/slug/$slug");
+  // For deep link usage
+  static Future<ChannelModel> joinBySlug(String slug) async {
+    final response =
+        await ApiClient.dio.post("/api/channels/join/slug/$slug");
+
+    return ChannelModel.fromJson(response.data);
   }
 
-  static Future<void> joinByToken(String token) async {
-    await ApiClient.dio.post("/api/channels/join/invite/$token");
+  static Future<ChannelModel> joinByToken(String token) async {
+    final response =
+        await ApiClient.dio.post("/api/channels/join/invite/$token");
+
+    return ChannelModel.fromJson(response.data);
   }
 }

@@ -13,70 +13,25 @@ class ChatsTab extends StatefulWidget {
   const ChatsTab({super.key});
 
   @override
-  ChatsTabState createState() => ChatsTabState();
+  State<ChatsTab> createState() => _ChatsTabState();
 }
 
-class ChatsTabState extends State<ChatsTab> {
-  List<ChannelModel> allChats = [];
-  bool loading = true;
-  bool error = false;
+class _ChatsTabState extends State<ChatsTab> {
+  List<ChannelModel> _chats = [];
+  bool _loading = true;
+  bool _error = false;
 
-  late StreamSubscription<String> _refreshSub;
-
-  // ================= INIT =================
+  late final StreamSubscription<String> _refreshSub;
 
   @override
   void initState() {
     super.initState();
-    loadChats();
+    _loadChats();
 
     _refreshSub = ChannelInfoRefreshBus.stream.listen((_) {
-      if (mounted) loadChats();
+      if (mounted) _loadChats();
     });
   }
-
-  // ================= LOAD =================
-
-  Future<void> loadChats() async {
-    if (!mounted) return;
-
-    setState(() {
-      loading = true;
-      error = false;
-    });
-
-    try {
-      final owned = await ChannelApi.getMyChannels();
-      final joined = await ChannelApi.getJoinedChannels();
-
-      final map = <String, ChannelModel>{};
-
-      for (final c in [...owned, ...joined]) {
-        map[c.id] = c;
-      }
-
-      final list = map.values.toList()
-        ..sort((a, b) => b.id.compareTo(a.id));
-
-      if (!mounted) return;
-
-      setState(() {
-        allChats = list;
-        loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-        error = true;
-      });
-    }
-  }
-
-  Future<void> reload() async => loadChats();
-
-  // ================= CLEANUP =================
 
   @override
   void dispose() {
@@ -84,47 +39,92 @@ class ChatsTabState extends State<ChatsTab> {
     super.dispose();
   }
 
+  // ================= LOAD =================
+
+  Future<void> _loadChats() async {
+    if (!mounted) return;
+
+    setState(() {
+      _loading = true;
+      _error = false;
+    });
+
+    try {
+      // 🚀 Parallel execution
+      final results = await Future.wait([
+        ChannelApi.getMyChannels(),
+        ChannelApi.getJoinedChannels(),
+      ]);
+
+      final owned = results[0] as List<ChannelModel>;
+      final joined = results[1] as List<ChannelModel>;
+
+      // Remove duplicates
+      final map = <String, ChannelModel>{
+        for (final c in [...owned, ...joined]) c.id: c
+      };
+
+      final list = map.values.toList();
+
+      // Sort by active status → fallback by id
+      list.sort((a, b) {
+        if (a.hasActiveStatus != b.hasActiveStatus) {
+          return b.hasActiveStatus ? 1 : -1;
+        }
+        return b.id.compareTo(a.id);
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        _chats = list;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
+  }
+
+  Future<void> _reload() async => _loadChats();
+
   // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: loading
-          ? _loadingShimmer()
-          : RefreshIndicator(
-              onRefresh: loadChats,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  if (error) _errorState(),
+    if (_loading) return _loadingShimmer();
 
-                  if (!error && allChats.isEmpty) _emptyState(),
+    return RefreshIndicator(
+      onRefresh: _reload,
+      child: _error
+          ? _errorState()
+          : _chats.isEmpty
+              ? _emptyState()
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _chats.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, thickness: 0.4),
+                  itemBuilder: (_, index) {
+                    final chat = _chats[index];
 
-                  if (!error && allChats.isNotEmpty)
-                    ...allChats.map(
-                      (chat) => Column(
-                        children: [
-                          ChannelCard(
-                            channel: chat,
-                            onTap: () async {
-                              final updated =
-                                  await ChannelOpenHelper.open(
-                                      context, chat);
+                    return ChannelCard(
+                      channel: chat,
+                      onTap: () async {
+                        final updated =
+                            await ChannelOpenHelper.open(context, chat);
 
-                              if (updated == true) {
-                                loadChats();
-                              }
-                            },
-                          ),
-                          const Divider(
-                              height: 1, thickness: 0.4),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
+                        if (updated == true) {
+                          _loadChats();
+                        }
+                      },
+                    );
+                  },
+                ),
     );
   }
 
@@ -132,31 +132,22 @@ class ChatsTabState extends State<ChatsTab> {
 
   Widget _loadingShimmer() {
     return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: 6,
       itemBuilder: (_, __) {
         return Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Shimmer.fromColors(
                 baseColor: Colors.grey.shade300,
                 highlightColor: Colors.grey.shade100,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+                child: const CircleAvatar(radius: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Shimmer.fromColors(
                       baseColor: Colors.grey.shade300,
@@ -190,59 +181,56 @@ class ChatsTabState extends State<ChatsTab> {
   // ================= EMPTY =================
 
   Widget _emptyState() {
-    return SizedBox(
-      height:
-          MediaQuery.of(context).size.height * 0.65,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.forum_outlined,
-              size: 70,
-              color: Colors.grey.shade400),
-          const SizedBox(height: 18),
-          const Text(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 180),
+        Icon(Icons.forum_outlined, size: 70, color: Colors.grey),
+        SizedBox(height: 18),
+        Center(
+          child: Text(
             "No chats yet",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
+        ),
+        SizedBox(height: 8),
+        Center(
+          child: Text(
             "Join or create a channel to start chatting",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   // ================= ERROR =================
 
   Widget _errorState() {
-    return SizedBox(
-      height:
-          MediaQuery.of(context).size.height * 0.65,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline,
-              size: 60, color: Colors.redAccent),
-          const SizedBox(height: 14),
-          const Text(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 180),
+        const Icon(Icons.error_outline,
+            size: 60, color: Colors.redAccent),
+        const SizedBox(height: 14),
+        const Center(
+          child: Text(
             "Failed to load chats",
             style: TextStyle(fontSize: 16),
           ),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: loadChats,
+        ),
+        const SizedBox(height: 10),
+        Center(
+          child: ElevatedButton(
+            onPressed: _loadChats,
             child: const Text("Retry"),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -6,16 +6,33 @@ class ChannelLinkHandler {
 
   static void init(BuildContext context) {
     _appLinks.uriLinkStream.listen((uri) {
-      final path = uri.path;
 
-      if (path.startsWith("/c/")) {
-        final slug = uri.pathSegments.last;
-        Navigator.pushNamed(context, "/join", arguments: slug);
+      final segments = uri.pathSegments;
+
+      if (segments.isEmpty) return;
+
+      // ✅ PUBLIC CHANNEL
+      if (segments.first == "c" && segments.length > 1) {
+        Navigator.pushNamed(
+          context,
+          "/join",
+          arguments: {
+            "code": segments[1],
+            "isPublic": true,
+          },
+        );
       }
 
-      if (path.startsWith("/invite/")) {
-        final token = uri.pathSegments.last;
-        Navigator.pushNamed(context, "/join", arguments: token);
+      // ✅ PRIVATE CHANNEL
+      if (segments.first == "invite" && segments.length > 1) {
+        Navigator.pushNamed(
+          context,
+          "/join",
+          arguments: {
+            "code": segments[1],
+            "isPublic": false,
+          },
+        );
       }
     });
   }

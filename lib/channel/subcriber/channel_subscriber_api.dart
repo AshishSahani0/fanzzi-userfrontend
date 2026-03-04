@@ -6,17 +6,18 @@ class ChannelSubscriberApi {
   /// 💎 PAID channel → List<ChannelSubscriberModel>
   /// 🟢 FREE channel → empty list []
   static Future<List<ChannelSubscriberModel>> getSubscribers(
-      String channelId) async {
+    String channelId) async {
 
-    final res = await ApiClient.dio.get(
-      "/api/channels/$channelId/subscribers",
-    );
+  final res = await ApiClient.dio.get(
+    "/api/channels/$channelId/subscribers",
+  );
 
-    // Backend guarantees: always List
-    return (res.data as List)
-        .map((e) => ChannelSubscriberModel.fromJson(e))
-        .toList();
-  }
+  final List data = res.data["content"] ?? [];
+
+  return data
+      .map((e) => ChannelSubscriberModel.fromJson(e))
+      .toList();
+}
 
   static Future<int> fetchSubscriberCount(String channelId) async {
     final res = await ApiClient.dio.get(

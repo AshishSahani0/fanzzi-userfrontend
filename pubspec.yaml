@@ -58,6 +58,9 @@ dependencies:
   path: ^1.9.0
   camera: ^0.10.5+9
   file_picker: ^8.0.0
+  flutter_linkify: ^6.0.0
+  percent_indicator: ^4.2.3
+  url_launcher: ^6.2.5
   
 
   # The following adds the Cupertino Icons font to your application.

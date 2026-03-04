@@ -7,12 +7,12 @@ class ChannelMembershipApi {
       "/api/channels/membership/$channelId",
     );
 
-    return res.data == true;
+    return res.data["member"] == true;
   }
 
   static Future<void> leaveChannel(String channelId) async {
-  await ApiClient.dio.post(
-    "/api/channels/$channelId/leave",
-  );
-}
+    await ApiClient.dio.post(
+      "/api/channels/$channelId/leave",
+    );
+  }
 }

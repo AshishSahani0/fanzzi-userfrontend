@@ -18,52 +18,39 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
   String query = "";
   bool loading = false;
 
-  Future<void> search(String text) async {
-    query = text.trim();
+ Future<void> search(String text) async {
+  query = text.trim();
 
-    if (query.isEmpty) {
-      setState(() {
-        joinedChannels = [];
-        publicChannels = [];
-        loading = false;
-      });
-      return;
-    }
-
-    setState(() => loading = true);
-
-    try {
-      final result =
-          await ChannelSearchApi.searchChannels(query);
-
-      var joined = result["joined"] ?? [];
-      var pub = result["public"] ?? [];
-
-      // ❌ Remove owner's own channels
-      joined = joined.where((c) => !c.owner).toList();
-      pub = pub.where((c) => !c.owner).toList();
-
-      // ❌ Remove duplicates from public
-      final joinedIds = joined.map((c) => c.id).toSet();
-      pub = pub.where((c) => !joinedIds.contains(c.id)).toList();
-
-      if (!mounted) return;
-
-      setState(() {
-        joinedChannels = joined;
-        publicChannels = pub;
-        loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() => loading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Search failed: $e")),
-      );
-    }
+  if (query.isEmpty) {
+    setState(() {
+      publicChannels = [];
+      loading = false;
+    });
+    return;
   }
+
+  setState(() => loading = true);
+
+  try {
+    final result =
+        await ChannelSearchApi.searchPublic(query);
+
+    if (!mounted) return;
+
+    setState(() {
+      publicChannels = result;
+      loading = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() => loading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Search failed: $e")),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -89,33 +76,25 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
           if (loading) const LinearProgressIndicator(),
 
           Expanded(
-            child: ListView(
-              children: [
-                if (joinedChannels.isNotEmpty) ...[
-                  _sectionTitle("Joined Channels"),
-                  ...joinedChannels
-                      .map((c) => _channelTile(c, true)),
-                ],
+  child: ListView(
+    children: [
+      if (publicChannels.isNotEmpty) ...[
+        _sectionTitle("Channels"),
+        ...publicChannels.map(_channelTile),
+      ],
 
-                if (publicChannels.isNotEmpty) ...[
-                  _sectionTitle("Public Channels"),
-                  ...publicChannels
-                      .map((c) => _channelTile(c, false)),
-                ],
-
-                if (!loading &&
-                    joinedChannels.isEmpty &&
-                    publicChannels.isEmpty &&
-                    query.isNotEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text("No channels found ❌"),
-                    ),
-                  ),
-              ],
-            ),
+      if (!loading &&
+          publicChannels.isEmpty &&
+          query.isNotEmpty)
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text("No channels found ❌"),
           ),
+        ),
+    ],
+  ),
+),
         ],
       ),
     );
@@ -136,27 +115,27 @@ class _ChannelSearchPageState extends State<ChannelSearchPage> {
     );
   }
 
-  Widget _channelTile(ChannelModel channel, bool joined) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundImage:
-            channel.profileImageUrl != null
-                ? NetworkImage(channel.profileImageUrl!)
-                : null,
-        child: channel.profileImageUrl == null
-            ? Text(channel.name[0].toUpperCase())
-            : null,
-      ),
-      title: Text(channel.name),
-      subtitle: joined
-          ? const Text("Already Joined ✅")
-          : const Text("Public Channel 🌍"),
-      trailing: joined
-          ? const Icon(Icons.check, color: Colors.green)
-          : const Icon(Icons.add, color: Colors.blue),
-      onTap: () {
-        ChannelOpenHelper.open(context, channel);
-      },
-    );
-  }
+  Widget _channelTile(ChannelModel channel) {
+  return ListTile(
+    leading: CircleAvatar(
+      backgroundImage:
+          channel.profileImageUrl != null
+              ? NetworkImage(channel.profileImageUrl!)
+              : null,
+      child: channel.profileImageUrl == null
+          ? Text(channel.name[0].toUpperCase())
+          : null,
+    ),
+    title: Text(channel.name),
+    subtitle: channel.joined
+        ? const Text("Already Joined ✅")
+        : const Text("Public Channel 🌍"),
+    trailing: channel.joined
+        ? const Icon(Icons.check, color: Colors.green)
+        : const Icon(Icons.add, color: Colors.blue),
+    onTap: () {
+      ChannelOpenHelper.open(context, channel);
+    },
+  );
+}
 }

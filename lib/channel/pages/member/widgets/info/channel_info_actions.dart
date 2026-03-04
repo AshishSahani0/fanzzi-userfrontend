@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:frontenduser/channel/member_count/channel_membership_api.dart';
+import 'package:frontenduser/channel/membership/channel_membership_api.dart';
 import '../../../../model/channel_model.dart';
 
 class ChannelInfoActions extends StatelessWidget {

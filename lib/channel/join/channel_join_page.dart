@@ -3,7 +3,7 @@ import 'channel_join_api.dart';
 
 class ChannelJoinPage extends StatefulWidget {
   final String code;
-  final bool isPublic; // ✅ NEW
+  final bool isPublic;
 
   const ChannelJoinPage({
     super.key,
@@ -16,6 +16,9 @@ class ChannelJoinPage extends StatefulWidget {
 }
 
 class _ChannelJoinPageState extends State<ChannelJoinPage> {
+  bool _loading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -31,27 +34,28 @@ class _ChannelJoinPageState extends State<ChannelJoinPage> {
       }
 
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Joined Channel ✅")),
-      );
-
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Unable to join channel")),
-      );
-
-      Navigator.pop(context);
+      setState(() {
+        _loading = false;
+        _error = "Unable to join channel";
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      body: Center(
+        child: _loading
+            ? const CircularProgressIndicator()
+            : Text(
+                _error ?? "",
+                style: const TextStyle(color: Colors.red),
+              ),
+      ),
     );
   }
 }

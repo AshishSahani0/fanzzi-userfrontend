@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../../model/channel_model.dart';
+import '../model/channel_model.dart';
 import 'channel_qr_popup.dart';
 import 'internal_share_sheet.dart';
 

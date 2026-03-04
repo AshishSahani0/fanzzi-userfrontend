@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:frontenduser/channel/owner/widgets/owner/info/channel_status_viewer_page.dart';
-import 'package:frontenduser/channel/owner/widgets/owner/info/status_avatar.dart';
-import 'package:frontenduser/channel/member_count/channel_member_section.dart';
+import 'package:frontenduser/channel/status/channel_status_viewer_page.dart';
+import 'package:frontenduser/channel/status/status_avatar.dart';
+
 
 import '../model/channel_model.dart';
 import 'owner/channel_info_page.dart';
@@ -62,61 +62,55 @@ class _ChannelAppBarState extends State<ChannelAppBar> {
         ),
 
         actions: [
-
           /// 📌 Pin (only if exactly 1 selected)
-  if (widget.selectedCount == 1)
-    IconButton(
-      icon: const Icon(Icons.push_pin),
-      tooltip: "Pin Post",
-      onPressed: widget.onPin,
-    ),
-          /// ✏ Edit (only if exactly 1 selected)
           if (widget.selectedCount == 1)
             IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: widget.onEdit,
+              icon: const Icon(Icons.push_pin),
+              tooltip: "Pin Post",
+              onPressed: widget.onPin,
             ),
 
+          /// ✏ Edit (only if exactly 1 selected)
+          if (widget.selectedCount == 1)
+            IconButton(icon: const Icon(Icons.edit), onPressed: widget.onEdit),
+
           /// 🔗 Share
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: widget.onShare,
-          ),
+          IconButton(icon: const Icon(Icons.share), onPressed: widget.onShare),
 
           /// 🗑 Delete
           IconButton(
-  icon: const Icon(Icons.delete),
-  onPressed: () async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Posts?"),
-        content: Text(
-          widget.selectedCount == 1
-              ? "Are you sure you want to delete this post?"
-              : "Are you sure you want to delete ${widget.selectedCount} posts?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete"),
-          ),
-        ],
-      ),
-    );
+            icon: const Icon(Icons.delete),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Delete Posts?"),
+                  content: Text(
+                    widget.selectedCount == 1
+                        ? "Are you sure you want to delete this post?"
+                        : "Are you sure you want to delete ${widget.selectedCount} posts?",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text("Cancel"),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text("Delete"),
+                    ),
+                  ],
+                ),
+              );
 
-    if (confirm == true) {
-      widget.onDelete?.call();
-    }
-  },
-),
+              if (confirm == true) {
+                widget.onDelete?.call();
+              }
+            },
+          ),
         ],
       );
     }
@@ -150,17 +144,15 @@ class _ChannelAppBarState extends State<ChannelAppBar> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ChannelStatusViewerPage(
-                        channelId: widget.channel.id,
-                      ),
+                      builder: (_) =>
+                          ChannelStatusViewerPage(channelId: widget.channel.id),
                     ),
                   );
                 } else {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          ChannelInfoPage(channel: widget.channel),
+                      builder: (_) => ChannelInfoPage(channel: widget.channel),
                     ),
                   );
                 }
@@ -182,9 +174,12 @@ class _ChannelAppBarState extends State<ChannelAppBar> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  ChannelMemberSection(
-                    channelId: widget.channel.id,
-                    compact: true,
+                  Text(
+                    "${widget.channel.memberCount} member${widget.channel.memberCount == 1 ? '' : 's'}",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
@@ -193,9 +188,7 @@ class _ChannelAppBarState extends State<ChannelAppBar> {
         ),
       ),
 
-      actions: [
-        ChannelOwnerMenu(channel: widget.channel),
-      ],
+      actions: [ChannelOwnerMenu(channel: widget.channel)],
     );
   }
 }

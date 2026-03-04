@@ -12,15 +12,12 @@ class ApiClient {
 
   static Function()? onLogout;
 
-  static const String mediaBaseUrl =
-    "https://cdn.fanzzi.com";
+  static const String mediaBaseUrl = "https://cdn.fanzzi.com";
 
   static Future<void> init() async {
     final dir = await getApplicationDocumentsDirectory();
 
-    cookieJar = PersistCookieJar(
-      storage: FileStorage("${dir.path}/cookies"),
-    );
+    cookieJar = PersistCookieJar(storage: FileStorage("${dir.path}/cookies"));
 
     dio = Dio(
       BaseOptions(
@@ -35,16 +32,13 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-
           final token = await SessionService.getToken();
 
           if (token != null) {
-            options.headers["Authorization"] =
-                "Bearer $token";
+            options.headers["Authorization"] = "Bearer $token";
           }
 
-          final deviceId =
-              await DeviceService.getDeviceId();
+          final deviceId = await DeviceService.getDeviceId();
 
           options.headers["X-Device-Id"] = deviceId;
 
@@ -52,22 +46,21 @@ class ApiClient {
         },
 
         onError: (error, handler) async {
+          final status = error.response?.statusCode;
+          final path = error.requestOptions.path;
 
-          if (error.response?.statusCode == 401) {
-
-            bool refreshed =
-                await forceRefreshToken();
+          if (status == 401 && path != "/auth/user/refresh") {
+            bool refreshed = await forceRefreshToken();
 
             if (refreshed) {
               final req = error.requestOptions;
 
-              final token =
-                  await SessionService.getToken();
+              final token = await SessionService.getToken();
 
-              req.headers["Authorization"] =
-                  "Bearer $token";
+              req.headers["Authorization"] = "Bearer $token";
 
               final response = await dio.fetch(req);
+
               return handler.resolve(response);
             }
 
@@ -84,18 +77,14 @@ class ApiClient {
   // 🔄 CALL /auth/user/refresh
   static Future<bool> forceRefreshToken() async {
     try {
-      final deviceId =
-          await DeviceService.getDeviceId();
+      final deviceId = await DeviceService.getDeviceId();
 
       final res = await dio.post(
         "/auth/user/refresh",
-        options: Options(
-          headers: {"X-Device-Id": deviceId},
-        ),
+        options: Options(headers: {"X-Device-Id": deviceId}),
       );
 
-      await SessionService.saveToken(
-          res.data["accessToken"]);
+      await SessionService.saveToken(res.data["accessToken"]);
 
       return true;
     } catch (_) {
@@ -104,12 +93,11 @@ class ApiClient {
   }
 
   static String buildPublicUrl(String? key) {
-  if (key == null || key.isEmpty) return "";
+    if (key == null || key.isEmpty) return "";
 
-  // Remove accidental leading slash
-  final cleanKey =
-      key.startsWith("/") ? key.substring(1) : key;
+    // Remove accidental leading slash
+    final cleanKey = key.startsWith("/") ? key.substring(1) : key;
 
-  return "$mediaBaseUrl/$cleanKey";
-}
+    return "$mediaBaseUrl/$cleanKey";
+  }
 }

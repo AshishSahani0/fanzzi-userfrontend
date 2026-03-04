@@ -1,7 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:frontenduser/channel/delete/channel_delete_api.dart';
 
-class ChannelDeleteButton extends StatelessWidget {
+class ChannelDeleteButton extends StatefulWidget {
   final String channelId;
 
   const ChannelDeleteButton({
@@ -10,67 +12,97 @@ class ChannelDeleteButton extends StatelessWidget {
   });
 
   @override
+  State<ChannelDeleteButton> createState() =>
+      _ChannelDeleteButtonState();
+}
+
+class _ChannelDeleteButtonState
+    extends State<ChannelDeleteButton> {
+
+  bool _loading = false;
+
+  @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(
-        Icons.delete_forever,
-        color: Colors.red,
-      ),
+      enabled: !_loading,
+      leading: _loading
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.red,
+              ),
+            )
+          : const Icon(
+              Icons.delete_forever,
+              color: Colors.red,
+            ),
       title: const Text(
         "Delete Channel",
         style: TextStyle(color: Colors.red),
       ),
-      onTap: () => _confirmDelete(context),
+      onTap: _loading ? null : () => _handleDelete(context),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Channel"),
-        content: const Text(
-          "This will permanently delete the channel, including:\n"
-          "• All members\n"
-          "• All posts & media\n"
-          "• All subscriptions\n\n"
-          "This action cannot be undone.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete Permanently"),
-          ),
-        ],
-      ),
-    );
+  Future<void> _handleDelete(BuildContext context) async {
+    final confirmed = await _showConfirmDialog(context);
 
-    if (confirm != true) return;
+    if (confirmed != true) return;
+
+    setState(() => _loading = true);
 
     try {
-      await ChannelDeleteApi.deleteChannel(channelId);
+      await ChannelDeleteApi.deleteChannel(widget.channelId);
 
-      if (!context.mounted) return;
+      if (!mounted) return;
 
-      Navigator.pop(context);       // close menu
-      Navigator.pop(context, true); // exit info page
+      // Return result to previous screen
+      Navigator.of(context).pop(true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("🗑️ Channel deleted")),
-      );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Delete failed: $e")),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
+  }
+
+  Future<bool?> _showConfirmDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: !_loading,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Delete Channel"),
+          content: const Text(
+            "This will permanently delete this channel.\n\n"
+            "All members, posts, and subscriptions will be removed.\n\n"
+            "This action cannot be undone.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(ctx).pop(false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () =>
+                  Navigator.of(ctx).pop(true),
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

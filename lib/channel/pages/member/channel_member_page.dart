@@ -1,118 +1,127 @@
 import 'package:flutter/material.dart';
 import 'package:frontenduser/channel/join/channel_join_api.dart';
-import 'package:frontenduser/channel/member_count/channel_membership_api.dart';
+import 'package:frontenduser/channel/membership/channel_membership_api.dart';
 import 'package:frontenduser/channel/model/channel_model.dart';
 import 'package:frontenduser/channel/post/channel_feed_page.dart';
 
 import '../../join/channel_join_bottom_bar.dart';
 import 'widgets/channel_member_appbar.dart';
 
-
 class ChannelMemberPage extends StatefulWidget {
   final ChannelModel channel;
 
-  const ChannelMemberPage({super.key, required this.channel});
+  const ChannelMemberPage({
+    super.key,
+    required this.channel,
+  });
 
   @override
   State<ChannelMemberPage> createState() => _ChannelMemberPageState();
 }
 
 class _ChannelMemberPageState extends State<ChannelMemberPage> {
-  bool joined = false;
+
+  late ChannelModel _channel;
   bool joining = false;
 
- @override
-void initState() {
-  super.initState();
-  _loadMembership();
-}
+  @override
+  void initState() {
+    super.initState();
+    _channel = widget.channel;
+    _loadMembership();
+  }
 
-Future<void> _loadMembership() async {
-  try {
-    final result =
-        await ChannelMembershipApi.isMember(widget.channel.id);
+  /// 🔹 Keep membership check, but sync into _channel
+  Future<void> _loadMembership() async {
+    try {
+      final result =
+          await ChannelMembershipApi.isMember(_channel.id);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      joined = result;
-    });
-  } catch (_) {}
-}
+      setState(() {
+        _channel = _channel.copyWith(member: result);
+      });
+
+    } catch (_) {}
+  }
 
   Future<void> joinChannel() async {
-  if (joining) return;
+    if (joining) return;
 
-  setState(() => joining = true);
+    setState(() => joining = true);
 
-  try {
-    await ChannelJoinApi.joinByChannelId(widget.channel.id);
+    try {
+      final updated =
+          await ChannelJoinApi.joinByChannelId(_channel.id);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      joined = true;
-      joining = false;
-    });
+      setState(() {
+        _channel = updated;   // 🔥 Replace entire object
+        joining = false;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Joined channel ✅")),
-    );
-  } catch (e) {
-    if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Joined channel ✅")),
+      );
 
-    setState(() => joining = false);
+    } catch (e) {
+      if (!mounted) return;
 
-    String message = "Join failed";
+      setState(() => joining = false);
 
-    if (e.toString().contains("429")) {
-      message = "Please wait before rejoining.";
+      String message = "Join failed";
+      if (e.toString().contains("429")) {
+        message = "Please wait before rejoining.";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
-}
 
   void openGift() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Gifts feature coming soon")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Gifts feature coming soon")),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ChannelMemberAppBar(channel: widget.channel),
-      body: Stack(
-  children: [
-    Positioned.fill(
-      child: ChannelFeedPage(
-        channelId: widget.channel.id,
-        channel: widget.channel,
-        isJoined: joined,
-        selectedPosts: const {},
-        selectionMode: false,
-        onStartSelection: () {},
-        onToggleSelection: (_) {},
-      ),
-    ),
+      appBar: ChannelMemberAppBar(channel: _channel),
 
-    Align(
-      alignment: Alignment.bottomCenter,
-      child: ChannelJoinBottomBar(
-        joined: joined,
-        joining: joining,
-        joinText: widget.channel.type == "PAID"
-            ? "Join (Subscription Required)"
-            : "Join Channel",
-        onJoin: joinChannel,
-        onGift: openGift,
+      body: Stack(
+        children: [
+
+          Positioned.fill(
+            child: ChannelFeedPage(
+              channelId: _channel.id,      // 🔥 use _channel
+              channel: _channel,           // 🔥 use _channel
+              isJoined: _channel.member,   // 🔥 single source
+              selectedPosts: const {},
+              selectionMode: false,
+              onStartSelection: () {},
+              onToggleSelection: (_) {},
+            ),
+          ),
+
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ChannelJoinBottomBar(
+              joined: _channel.member,     // 🔥 no separate bool
+              joining: joining,
+              joinText: _channel.type == "PAID"
+                  ? "Join (Subscription Required)"
+                  : "Join Channel",
+              onJoin: joinChannel,
+              onGift: openGift,
+            ),
+          ),
+        ],
       ),
-    ),
-  ],
-),
     );
   }
 }

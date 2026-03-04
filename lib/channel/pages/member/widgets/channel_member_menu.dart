@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontenduser/channel/member_count/channel_membership_api.dart';
+import 'package:frontenduser/channel/membership/channel_membership_api.dart';
 import 'package:frontenduser/channel/block/channel_block_api.dart';
 import 'package:frontenduser/channel/model/channel_model.dart';
 import 'package:frontenduser/channel/pages/member/widgets/report_channel_dialog.dart';

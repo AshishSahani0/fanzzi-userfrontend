@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../../model/channel_model.dart';
+import '../model/channel_model.dart';
 import 'invite_service.dart';
 
 class InternalShareSheet {
@@ -38,8 +38,10 @@ class _Sheet extends StatelessWidget {
 
     // ✅ FILTER: remove the channel being shared
     final targets = joinedChannels
-        .where((c) => c.id != channel.id)
-        .toList();
+    .where((c) =>
+        c.owner &&          // must own target channel
+        c.id != channel.id) // cannot share inside same channel
+    .toList();
 
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -101,7 +103,7 @@ class _Sheet extends StatelessWidget {
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Invite sent ✅"),
+                          content: Text("Invite sent"),
                         ),
                       );
                     },
